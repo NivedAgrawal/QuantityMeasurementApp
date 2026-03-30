@@ -20,11 +20,6 @@ public class QuantityMeasurementController {
     @Autowired
     private IQuantityMeasurementService service;
 
-    @GetMapping("/")
-    public String Hello(){
-        return "Quantity app";
-    }
-
     @PostMapping("/compare")
     public QuantityMeasurementEntity compare(@RequestBody QuantityInputDTO input) {
         return service.compare(input);

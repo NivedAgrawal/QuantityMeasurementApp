@@ -1,11 +1,11 @@
 package com.apps.quantitymeasurement.service;
 
+import com.apps.quantitymeasurement.entity.QuantityMeasurementEntity;
 import com.apps.quantitymeasurement.repository.QuantityMeasurementRepository;
 import com.apps.quantitymeasurement.units.*;
 import org.springframework.stereotype.Service;
 
 import com.apps.quantitymeasurement.dto.QuantityInputDTO;
-import com.apps.quantitymeasurement.entity.QuantityMeasurementEntity;
 import com.apps.quantitymeasurement.units.*;
 
 import java.time.LocalDateTime;
@@ -20,7 +20,6 @@ public class QuantityMeasurementServiceImpl implements IQuantityMeasurementServi
         this.repository = repository;
     }
 
-    // ---------------- COMMON METHOD ----------------
 
     private IMeasurable getUnit(String measurementType, String unit) {
         unit = unit.toUpperCase();
@@ -34,7 +33,6 @@ public class QuantityMeasurementServiceImpl implements IQuantityMeasurementServi
         };
     }
 
-    // ---------------- COMPARE ----------------
 
     @Override
     public QuantityMeasurementEntity compare(QuantityInputDTO input) {
@@ -60,33 +58,40 @@ public class QuantityMeasurementServiceImpl implements IQuantityMeasurementServi
         return repository.save(entity);
     }
 
-    // ---------------- CONVERT ----------------
 
     @Override
     public QuantityMeasurementEntity convert(QuantityInputDTO input) {
 
         QuantityMeasurementEntity entity = new QuantityMeasurementEntity();
 
-        var q = input.getThisQuantityDTO();
+        var q1 = input.getThisQuantityDTO();
+        var q2 = input.getThatQuantityDTO();
 
-        IMeasurable unit = getUnit(q.getMeasurementType(), q.getUnit());
+        if (q1 == null || q2 == null) {
+            throw new RuntimeException("Invalid input");
+        }
 
-        double base = unit.convertToBaseUnit(q.getValue());
-        double result = unit.convertFromBaseUnit(base);
+        IMeasurable fromUnit = getUnit(q1.getMeasurementType(), q1.getUnit());
+        IMeasurable toUnit = getUnit(q2.getMeasurementType(), q2.getUnit());
 
-        entity.setThisValue(q.getValue());
-        entity.setThisUnit(q.getUnit());
-        entity.setThisMeasurementType(q.getMeasurementType());
+        double base = fromUnit.convertToBaseUnit(q1.getValue());
+        double result = toUnit.convertFromBaseUnit(base);
+
+        entity.setThisValue(q1.getValue());
+        entity.setThisUnit(q1.getUnit());
+        entity.setThisMeasurementType(q1.getMeasurementType());
+
+        entity.setThatUnit(q2.getUnit());
+        entity.setThatMeasurementType(q2.getMeasurementType());
 
         entity.setResultValue(result);
-        entity.setResultUnit(q.getUnit());
+        entity.setResultUnit(q2.getUnit());
+
         entity.setOperation("CONVERT");
         entity.setCreatedAt(LocalDateTime.now());
 
         return repository.save(entity);
     }
-
-    // ---------------- ADD ----------------
 
     @Override
     public QuantityMeasurementEntity add(QuantityInputDTO input) {
@@ -183,21 +188,16 @@ public class QuantityMeasurementServiceImpl implements IQuantityMeasurementServi
         return repository.save(entity);
     }
 
-    // ---------------- HISTORY ----------------
 
     @Override
     public List<QuantityMeasurementEntity> getHistoryByOperation(String operation) {
         return repository.findByOperation(operation.toUpperCase());
     }
 
-    // ---------------- COUNT ----------------
-
     @Override
     public long getOperationCount(String operation) {
         return repository.countByOperationAndErrorFalse(operation.toUpperCase());
     }
-
-    // ---------------- COMMON SETTER ----------------
 
     private void setCommonFields(QuantityMeasurementEntity entity, QuantityInputDTO input) {
 
